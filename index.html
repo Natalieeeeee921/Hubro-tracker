@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hubro Business Tracker</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons Components (SVG) ---
+        const IconWrapper = ({ children, color = "currentColor", size = 18, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+
+        const Icons = {
+            Activity: (props) => <IconWrapper {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></IconWrapper>,
+            Save: (props) => <IconWrapper {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></IconWrapper>,
+            Trash2: (props) => <IconWrapper {...props}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></IconWrapper>,
+            Download: (props) => <IconWrapper {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></IconWrapper>,
+            Plus: (props) => <IconWrapper {...props}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></IconWrapper>,
+            FileText: (props) => <IconWrapper {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></IconWrapper>,
+            Factory: (props) => <IconWrapper {...props}><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><line x1="17" y1="18" x2="17" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="7" y1="18" x2="7" y2="18"/></IconWrapper>,
+            Landmark: (props) => <IconWrapper {...props}><line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 20 7 4 7"></polygon></IconWrapper>,
+            Beaker: (props) => <IconWrapper {...props}><path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><path d="M6 14h12"/></IconWrapper>,
+            Briefcase: (props) => <IconWrapper {...props}><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></IconWrapper>,
+            Calculator: (props) => <IconWrapper {...props}><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01"></path><path d="M12 10h.01"></path><path d="M8 10h.01"></path><path d="M12 14h.01"></path><path d="M8 14h.01"></path><path d="M12 18h.01"></path><path d="M8 18h.01"></path></IconWrapper>,
+            ListOrdered: (props) => <IconWrapper {...props}><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"></path></IconWrapper>,
+            Trophy: (props) => <IconWrapper {...props}><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10"></path><path d="M17 4v3a5 5 0 0 1-10 0V4"></path><path d="M6 21a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h2"></path><path d="M18 21a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"></path></IconWrapper>,
+            Info: (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></IconWrapper>
+        };
+
+        // --- Main Application ---
+        function App() {
+            // Data Structure
+            const emptyRound = {
+                round: 1,
+                // --- 1. Production ---
+                factoryAction: 'None', 
+                productStatus: 'Existing', 
+                productType: 'Jetpack Basic', 
+                activityLevel: '', 
+                productionVolume: '', 
+                unitCost: '', 
+                salesPrice: '', 
+                
+                // --- 2. Financing ---
+                loanAmount: '', 
+                loanTerm: 'None', 
+
+                // --- 3. R&D ---
+                hasRD: 'No', 
+                rdProjectName: '', 
+                rdCost: '', 
+
+                // --- 4. Contracts ---
+                wonContract: '', // NEW: Which contract did we win last round? (For Q2+)
+                marketingSpend: '', 
+                // 5 separate priority slots
+                contractP1: '',
+                contractP2: '',
+                contractP3: '',
+                contractP4: '',
+                contractP5: '',
+                
+                // --- 5. Summary/Financials ---
+                satisfiedWithGrowth: 'Yes',
+                variableCosts: '', 
+                grossProfit: '',
+                operatingExpenses: '', 
+                netIncome: '',
+                endingCash: '', 
+                equity: '',
+                // Inventory removed as requested
+                
+                // --- Notes ---
+                strategyNote: '', 
+            };
+
+            const [rounds, setRounds] = useState([]);
+            const [currentForm, setCurrentForm] = useState(emptyRound);
+            const [nextRoundNum, setNextRoundNum] = useState(1);
+            const maxRounds = 6; 
+
+            // --- Local Storage Persistence ---
+            useEffect(() => {
+                const savedRounds = localStorage.getItem('hubroRounds');
+                const savedNextNum = localStorage.getItem('hubroNextRoundNum');
+                
+                if (savedRounds) {
+                    try {
+                        const parsedRounds = JSON.parse(savedRounds);
+                        setRounds(parsedRounds);
+                        // Determine next round based on saved data
+                        if (savedNextNum) {
+                            const next = parseInt(savedNextNum);
+                            setNextRoundNum(next);
+                            // Set current form round number
+                            setCurrentForm(prev => ({...prev, round: next}));
+                        } else {
+                            // Fallback logic
+                            const max = parsedRounds.length > 0 ? Math.max(...parsedRounds.map(r => r.round)) : 0;
+                            setNextRoundNum(max + 1);
+                            setCurrentForm(prev => ({...prev, round: max + 1}));
+                        }
+                    } catch (e) {
+                        console.error("Error loading save data", e);
+                    }
+                }
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('hubroRounds', JSON.stringify(rounds));
+                localStorage.setItem('hubroNextRoundNum', nextRoundNum.toString());
+            }, [rounds, nextRoundNum]);
+
+            // --- Handlers ---
+
+            const handleInputChange = (e) => {
+                const { name, value } = e.target;
+                setCurrentForm({ ...currentForm, [name]: value });
+            };
+
+            const addRound = () => {
+                if (nextRoundNum > maxRounds) return;
+                
+                // Save Logic
+                const newRounds = [...rounds, { ...currentForm, round: nextRoundNum, id: Date.now() }];
+                setRounds(newRounds);
+                
+                const nextNum = nextRoundNum + 1;
+                setNextRoundNum(nextNum);
+                
+                // Smart inheritance for next form
+                setCurrentForm({
+                    ...emptyRound,
+                    productType: currentForm.productType,
+                    productStatus: 'Existing', 
+                    salesPrice: currentForm.salesPrice,
+                    unitCost: currentForm.unitCost,
+                    round: nextNum
+                });
+
+                // Scroll to top of list
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const deleteRound = (id) => {
+                if(!confirm("Are you sure you want to delete this record?")) return;
+                
+                const roundToDelete = rounds.find(r => r.id === id);
+                const newRounds = rounds.filter(r => r.id !== id);
+                setRounds(newRounds);
+                
+                if (roundToDelete && roundToDelete.round < nextRoundNum) {
+                    setNextRoundNum(roundToDelete.round);
+                    setCurrentForm(prev => ({...prev, round: roundToDelete.round}));
+                }
+            };
+
+            const clearAllData = () => {
+                if(!confirm("WARNING: This will delete ALL data. Are you sure?")) return;
+                setRounds([]);
+                setNextRoundNum(1);
+                setCurrentForm({...emptyRound, round: 1});
+                localStorage.removeItem('hubroRounds');
+                localStorage.removeItem('hubroNextRoundNum');
+            }
+
+            const downloadCSV = () => {
+                const headers = [
+                    "Quarter (Q)", 
+                    // 1. Production
+                    "Factory Action", "Prod Status", "Product Name", "Activity(%)", "Volume", "Unit Cost($)", "Sales Price($)",
+                    // 2. Financing
+                    "Loan Amount", "Term",
+                    // 3. R&D
+                    "R&D Active?", "Project Name", "Cost",
+                    // 4. Contracts
+                    "Won Contract (Prev Q)", "Marketing Spend", "Priority 1", "Priority 2", "Priority 3", "Priority 4", "Priority 5",
+                    // 5. Summary
+                    "Satisfied?", "Var Costs", "Gross Profit", "Op Expenses", "Net Income", "Ending Cash", "Equity",
+                    // Note
+                    "Strategy Notes"
+                ];
+                
+                const rows = rounds.map(r => [
+                    r.round, 
+                    r.factoryAction, r.productStatus, r.productType, r.activityLevel, r.productionVolume, r.unitCost, r.salesPrice,
+                    r.loanAmount, r.loanTerm,
+                    r.hasRD, r.rdProjectName, r.rdCost,
+                    r.wonContract, r.marketingSpend, r.contractP1, r.contractP2, r.contractP3, r.contractP4, r.contractP5,
+                    r.satisfiedWithGrowth, r.variableCosts, r.grossProfit, r.operatingExpenses, r.netIncome, r.endingCash, r.equity,
+                    `"${r.strategyNote.replace(/"/g, '""')}"` // Escape quotes
+                ]);
+
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+                csvContent += headers.join(",") + "\n";
+                rows.forEach(row => {
+                    csvContent += row.join(",") + "\n";
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "hubro_final_report.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const progress = ((nextRoundNum - 1) / maxRounds) * 100;
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
+                    
+                    {/* Header */}
+                    <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border-l-4 border-indigo-600 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                <Icons.Activity className="text-indigo-600" />
+                                Hubro Business Tracker
+                            </h1>
+                            <p className="text-slate-500 mt-1 text-sm flex items-center gap-2">
+                                <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-semibold">Auto-Save Enabled</span>
+                                Production &rarr; Financing &rarr; R&D &rarr; Contracts &rarr; Financials
+                            </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <div className="flex-1 md:w-48 bg-gray-200 rounded-full h-2.5 relative group">
+                                <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" style={{ width: `${Math.min(progress, 100)}%` }}></div>
+                                <div className="absolute top-4 left-0 w-full text-center opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-black text-white rounded py-1 pointer-events-none">
+                                    Progress: {Math.min(nextRoundNum-1, 6)} / 6 Quarters
+                                </div>
+                                <p className="text-xs text-right mt-1 text-gray-500">Q{Math.min(nextRoundNum-1, 6)} / {maxRounds}</p>
+                            </div>
+                            
+                            <button 
+                                onClick={downloadCSV}
+                                disabled={rounds.length === 0}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap shadow-sm ${rounds.length === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+                            >
+                                <Icons.Download size={18} />
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                        
+                        {/* Left Side: Data Entry (5/12) */}
+                        <div className="xl:col-span-5 space-y-6">
+                            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 h-full overflow-y-auto max-h-[calc(100vh-140px)] sticky top-4">
+                                <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                                    <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+                                        <Icons.Plus size={20} className="text-indigo-500"/> 
+                                        Q{nextRoundNum > maxRounds ? 'END' : nextRoundNum} Input
+                                    </h2>
+                                    <div className="flex gap-2">
+                                        {rounds.length > 0 && (
+                                            <button onClick={clearAllData} className="text-xs text-red-400 hover:text-red-600 underline">Reset All</button>
+                                        )}
+                                        {nextRoundNum > maxRounds && <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded font-bold">Locked</span>}
+                                    </div>
+                                </div>
+
+                                {nextRoundNum <= maxRounds ? (
+                                    <div className="space-y-5 pb-10">
+                                        
+                                        {/* Step 1: Production */}
+                                        <div className="step-card border border-blue-200 bg-blue-50/30 rounded-lg p-3">
+                                            <h3 className="text-xs font-bold text-blue-800 uppercase mb-3 flex items-center gap-1">
+                                                <Icons.Factory size={14}/> 1. Production Decisions
+                                            </h3>
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="col-span-2">
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase mb-1 block">Factory Strategy</label>
+                                                        <select name="factoryAction" value={currentForm.factoryAction} onChange={handleInputChange} className="input-field w-full p-2 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                                                            <option value="None">None (Maintain)</option>
+                                                            <option value="Rent">Rent New Factory</option>
+                                                            <option value="Build">Build New Factory</option>
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <div className="col-span-2 border-t border-blue-200 pt-2 mt-1">
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase mb-1 block">Product Line</label>
+                                                        <div className="flex gap-2 mb-2">
+                                                            <label className={`flex-1 cursor-pointer py-1.5 px-2 rounded text-xs text-center border transition-colors ${currentForm.productStatus === 'Existing' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-500 border-slate-300'}`}>
+                                                                <input type="radio" name="productStatus" value="Existing" checked={currentForm.productStatus === 'Existing'} onChange={handleInputChange} className="hidden"/>
+                                                                Existing Product
+                                                            </label>
+                                                            <label className={`flex-1 cursor-pointer py-1.5 px-2 rounded text-xs text-center border transition-colors ${currentForm.productStatus === 'New' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-500 border-slate-300'}`}>
+                                                                <input type="radio" name="productStatus" value="New" checked={currentForm.productStatus === 'New'} onChange={handleInputChange} className="hidden"/>
+                                                                New Product
+                                                            </label>
+                                                        </div>
+                                                        <input name="productType" value={currentForm.productType} onChange={handleInputChange} placeholder="Name (e.g. Jetpack 2.0)" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500" />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Activity (%)</label>
+                                                        <input name="activityLevel" type="number" value={currentForm.activityLevel} onChange={handleInputChange} placeholder="100" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Volume (Units)</label>
+                                                        <input name="productionVolume" type="number" value={currentForm.productionVolume} onChange={handleInputChange} placeholder="e.g. 2000" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Unit Cost ($)</label>
+                                                        <input name="unitCost" type="number" value={currentForm.unitCost} onChange={handleInputChange} placeholder="COGS" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Sales Price ($)</label>
+                                                        <input name="salesPrice" type="number" value={currentForm.salesPrice} onChange={handleInputChange} placeholder="Price" className="input-field w-full p-2 border border-blue-300 bg-blue-50 rounded text-sm outline-none focus:border-blue-500 font-semibold text-blue-700" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Step 2: Financing */}
+                                        <div className="step-card border border-emerald-200 bg-emerald-50/30 rounded-lg p-3">
+                                            <h3 className="text-xs font-bold text-emerald-800 uppercase mb-3 flex items-center gap-1">
+                                                <Icons.Landmark size={14}/> 2. Financing
+                                            </h3>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div className="col-span-2">
+                                                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Loan Amount</label>
+                                                    <input name="loanAmount" type="number" value={currentForm.loanAmount} onChange={handleInputChange} placeholder="$ Amount" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-emerald-500" />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Term</label>
+                                                    <select name="loanTerm" value={currentForm.loanTerm} onChange={handleInputChange} className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-emerald-500">
+                                                        <option value="None">None</option>
+                                                        <option value="4">4 Q</option>
+                                                        <option value="8">8 Q</option>
+                                                        <option value="12">12 Q</option>
+                                                        <option value="16">16 Q</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Step 3: R&D */}
+                                        <div className="step-card border border-purple-200 bg-purple-50/30 rounded-lg p-3">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className="text-xs font-bold text-purple-800 uppercase mb-0 flex items-center gap-1">
+                                                    <Icons.Beaker size={14}/> 3. R&D
+                                                </h3>
+                                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">Invest?</span>
+                                                    <div className={`w-8 h-4 rounded-full p-0.5 transition-colors duration-200 ${currentForm.hasRD === 'Yes' ? 'bg-purple-600' : 'bg-slate-300'}`}>
+                                                        <div className={`w-3 h-3 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${currentForm.hasRD === 'Yes' ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                                    </div>
+                                                    <input type="checkbox" className="hidden" checked={currentForm.hasRD === 'Yes'} onChange={(e) => setCurrentForm({...currentForm, hasRD: e.target.checked ? 'Yes' : 'No'})} />
+                                                </label>
+                                            </div>
+                                            
+                                            {currentForm.hasRD === 'Yes' && (
+                                                <div className="grid grid-cols-2 gap-3 animate-pulse-once">
+                                                    <div className="col-span-2">
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Project Name</label>
+                                                        <input name="rdProjectName" value={currentForm.rdProjectName} onChange={handleInputChange} placeholder="e.g. Efficiency Upgrade" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-purple-500" />
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Investment Cost ($)</label>
+                                                        <input name="rdCost" type="number" value={currentForm.rdCost} onChange={handleInputChange} placeholder="Cost ($)" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-purple-500" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {currentForm.hasRD === 'No' && (
+                                                <p className="text-xs text-slate-400 italic text-center py-1">No R&D investment this round.</p>
+                                            )}
+                                        </div>
+
+                                        {/* Step 4: Contracts */}
+                                        <div className="step-card border border-orange-200 bg-orange-50/30 rounded-lg p-3">
+                                            <h3 className="text-xs font-bold text-orange-800 uppercase mb-3 flex items-center gap-1">
+                                                <Icons.Briefcase size={14}/> 4. Contracts
+                                            </h3>
+                                            <div className="space-y-3">
+                                                
+                                                {/* NEW: Won Contract Input (Only shows for Q2 onwards) */}
+                                                {nextRoundNum > 1 && (
+                                                    <div className="bg-yellow-50 border border-yellow-200 p-2 rounded mb-3">
+                                                        <label className="text-[10px] text-yellow-700 font-bold uppercase block mb-1 flex items-center gap-1">
+                                                            <Icons.Trophy size={12}/> Contract Won (In Prev Round)
+                                                        </label>
+                                                        <input name="wonContract" value={currentForm.wonContract} onChange={handleInputChange} placeholder="e.g. Contract #3 (High Value)" className="input-field w-full p-2 border border-yellow-300 rounded text-sm outline-none focus:border-yellow-500" />
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Total Marketing Spend ($)</label>
+                                                    <input name="marketingSpend" type="number" value={currentForm.marketingSpend} onChange={handleInputChange} placeholder="$" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-orange-500" />
+                                                </div>
+                                                
+                                                <div className="bg-white/50 p-2 rounded border border-orange-200">
+                                                    <label className="text-[10px] text-orange-600 font-bold uppercase block mb-2 flex items-center gap-1">
+                                                        <Icons.ListOrdered size={12}/> Priority Order (Current Q)
+                                                    </label>
+                                                    <div className="space-y-2">
+                                                        {[1,2,3,4,5].map(num => (
+                                                            <div key={num} className="flex gap-2 items-center">
+                                                                <span className="text-xs font-bold text-slate-400 w-4">{num}.</span>
+                                                                <input name={`contractP${num}`} value={currentForm[`contractP${num}`]} onChange={handleInputChange} placeholder={`Priority ${num}`} className="input-field w-full p-1.5 border border-slate-300 rounded text-xs outline-none focus:border-orange-400" />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Step 5: Summary */}
+                                        <div className="step-card border border-slate-200 bg-slate-50 rounded-lg p-3">
+                                            <h3 className="text-xs font-bold text-slate-700 uppercase mb-3 flex items-center gap-1">
+                                                <Icons.Calculator size={14}/> 5. Quarterly Summary
+                                            </h3>
+                                            <div className="space-y-3 text-sm">
+                                                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                                                    <span className="text-xs font-medium text-slate-600">Satisfied w/ Growth?</span>
+                                                    <div className="flex gap-1">
+                                                        <button onClick={() => setCurrentForm({...currentForm, satisfiedWithGrowth: 'Yes'})} className={`px-2 py-0.5 rounded text-xs border ${currentForm.satisfiedWithGrowth === 'Yes' ? 'bg-green-100 text-green-700 border-green-300 font-bold' : 'bg-white text-slate-400'}`}>Yes</button>
+                                                        <button onClick={() => setCurrentForm({...currentForm, satisfiedWithGrowth: 'No'})} className={`px-2 py-0.5 rounded text-xs border ${currentForm.satisfiedWithGrowth === 'No' ? 'bg-red-100 text-red-700 border-red-300 font-bold' : 'bg-white text-slate-400'}`}>No</button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="col-span-2">
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Costs</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <input name="variableCosts" type="number" value={currentForm.variableCosts} onChange={handleInputChange} placeholder="Var Costs" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500" />
+                                                            <input name="operatingExpenses" type="number" value={currentForm.operatingExpenses} onChange={handleInputChange} placeholder="Op Expenses" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500" />
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="col-span-2 border-t border-slate-200 pt-2">
+                                                        <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Results</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <input name="grossProfit" type="number" value={currentForm.grossProfit} onChange={handleInputChange} placeholder="Gross Profit" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500" />
+                                                            <input name="netIncome" type="number" value={currentForm.netIncome} onChange={handleInputChange} placeholder="Net Income" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500 font-semibold text-slate-700 bg-slate-100" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="col-span-2">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="col-span-1">
+                                                                <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">End Cash</label>
+                                                                <input name="endingCash" type="number" value={currentForm.endingCash} onChange={handleInputChange} placeholder="$" className="input-field w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-indigo-500" />
+                                                            </div>
+                                                            <div className="col-span-1">
+                                                                <label className="text-[10px] text-slate-500 font-bold uppercase block mb-1">Equity</label>
+                                                                <input name="equity" type="number" value={currentForm.equity} onChange={handleInputChange} placeholder="Equity" className="input-field w-full p-2 border border-emerald-200 bg-emerald-50 text-emerald-700 font-bold rounded text-sm outline-none focus:border-emerald-500" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <textarea name="strategyNote" value={currentForm.strategyNote} onChange={handleInputChange} className="w-full p-2 border border-slate-200 rounded text-xs h-16 outline-none resize-none mt-2 focus:border-indigo-400 transition" placeholder="Strategy Notes: Why did we make these choices?"></textarea>
+                                            </div>
+                                        </div>
+
+                                        <button 
+                                            onClick={addRound}
+                                            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md flex justify-center items-center gap-2 mt-4"
+                                        >
+                                            <Icons.Save size={18} />
+                                            Save Quarter {nextRoundNum}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-10 bg-slate-50 border border-dashed border-slate-300 rounded-lg">
+                                        <p className="text-slate-500 mb-4 font-medium">All Quarters Completed</p>
+                                        <button onClick={downloadCSV} className="text-indigo-600 font-medium hover:underline flex items-center gap-2 justify-center">
+                                            <Icons.Download size={16}/> Download Final Report Data
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right Side: Dashboard (7/12) */}
+                        <div className="xl:col-span-7">
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full sticky top-4 min-h-[500px]">
+                                <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                                    <h2 className="font-semibold text-slate-700 flex items-center gap-2">
+                                        <Icons.FileText size={18} />
+                                        Overview (Dashboard)
+                                    </h2>
+                                    <span className="text-xs text-slate-400 bg-white border px-2 py-0.5 rounded">
+                                        {rounds.length} Records
+                                    </span>
+                                </div>
+                                
+                                <div className="overflow-x-auto flex-grow custom-scrollbar">
+                                    <table className="w-full text-sm text-left border-collapse">
+                                        <thead className="bg-slate-100 text-slate-600 font-medium border-b border-slate-200 sticky top-0 z-10">
+                                            <tr>
+                                                <th className="p-3 w-10 text-center">Q</th>
+                                                <th className="p-3">Production</th>
+                                                <th className="p-3">Decisions</th>
+                                                <th className="p-3">Financials</th>
+                                                <th className="p-3 w-10"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {rounds.map((r) => (
+                                                <tr key={r.id} className="hover:bg-slate-50 transition align-top group">
+                                                    <td className="p-3 font-bold text-indigo-600 text-center bg-indigo-50/30 border-r border-slate-100">
+                                                        {r.round}
+                                                    </td>
+                                                    <td className="p-3">
+                                                        <div className="text-xs space-y-1">
+                                                            <div className="font-bold text-slate-700 flex flex-wrap items-center gap-1">
+                                                                {r.productType}
+                                                                {r.productStatus === 'New' && <span className="bg-green-100 text-green-700 px-1 rounded text-[10px] border border-green-200">NEW</span>}
+                                                            </div>
+                                                            <div className="text-slate-500">Act: {r.activityLevel}% | Vol: {r.productionVolume}</div>
+                                                            <div className="text-slate-500">Price: <span className="text-blue-600 font-medium">${r.salesPrice}</span></div>
+                                                            {r.factoryAction !== 'None' && <div className="text-blue-600 bg-blue-50 border border-blue-100 inline-block px-1 rounded mt-1 font-medium">{r.factoryAction}</div>}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-3">
+                                                        <div className="text-xs space-y-1">
+                                                            {r.loanAmount && (
+                                                                <div className="text-emerald-700 block bg-emerald-50 px-1 rounded border border-emerald-100 w-fit mb-1">Loan: ${r.loanAmount} <span className="text-slate-400">({r.loanTerm === 'None' ? '-' : r.loanTerm + 'Q'})</span></div>
+                                                            )}
+                                                            {r.hasRD === 'Yes' && (
+                                                                <div className="text-purple-700 block bg-purple-50 px-1 rounded border border-purple-100 w-fit mb-1">R&D: {r.rdProjectName} <span className="text-slate-400">(${r.rdCost})</span></div>
+                                                            )}
+                                                            
+                                                            {r.wonContract && (
+                                                                <div className="text-yellow-700 font-semibold mt-1 flex items-center gap-1 bg-yellow-50 px-1 rounded border border-yellow-100 w-fit">
+                                                                    <Icons.Trophy size={10}/> Won: {r.wonContract}
+                                                                </div>
+                                                            )}
+
+                                                            <div className="text-orange-700 block mt-1">
+                                                                Mkt: ${r.marketingSpend}
+                                                                <div className="text-[10px] text-slate-400 pl-1 border-l-2 border-slate-200 mt-0.5">
+                                                                    <span className="font-mono">1.</span> {r.contractP1 || '-'}<br/>
+                                                                    <span className="font-mono">2.</span> {r.contractP2 || '-'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-3">
+                                                        <div className="text-xs space-y-1">
+                                                            <div className="flex justify-between w-32"><span className="text-slate-400">Equity:</span> <span className="font-bold text-indigo-700">{r.equity}</span></div>
+                                                            <div className="flex justify-between w-32"><span className="text-slate-400">Net Inc:</span> <span className={`${parseFloat(r.netIncome)<0?'text-red-500':'text-emerald-600'} font-medium`}>{r.netIncome}</span></div>
+                                                            <div className="flex justify-between w-32"><span className="text-slate-400">End Cash:</span> <span className="font-mono">{r.endingCash}</span></div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-3 text-center align-middle">
+                                                        <button 
+                                                            onClick={() => deleteRound(r.id)} 
+                                                            className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded p-1 transition opacity-0 group-hover:opacity-100"
+                                                            title="Delete Quarter"
+                                                        >
+                                                            <Icons.Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {rounds.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="5" className="p-10 text-center text-slate-400">
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <Icons.Activity size={40} className="text-slate-200"/>
+                                                            <p>No data yet. Complete Q1 on the left.</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
